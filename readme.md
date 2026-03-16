@@ -142,15 +142,6 @@ An editable form showing the five model funds and their target percentages. The 
 
 ---
 
-## Design Decisions
-
-- **No ORM** — all database access uses Python's built-in `sqlite3` module with raw SQL. Queries are explicit and readable.
-- **Single HTML file** — the entire frontend lives in `static/index.html`. No build step, no bundler, no framework.
-- **Dark theme dashboard** — designed to feel like a professional fintech tool (Syne display font, DM Mono for numbers, dark background with subtle grid).
-- **Separation of concerns** — `database.py` handles only SQL, `rebalance.py` handles only math, `main.py` handles only HTTP routing.
-
----
-
 ## Author
 
 Just the one who likes to code and debug with love. Loves to be pentester  
