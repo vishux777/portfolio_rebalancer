@@ -20,7 +20,7 @@ def compute_rebalance(client_id: str):
 
     results = []
 
-    # ---- Process every PLAN fund first (even those with 0 holding) ----
+    
     for mf in model_funds:
         fid   = mf["fund_id"]
         fname = mf["fund_name"]
@@ -35,7 +35,6 @@ def compute_rebalance(client_id: str):
         if round(amount, 2) == 0:
             action = "HOLD"
 
-        # Post-rebalance % = target_pct (by definition)
         post_rebalance_pct = target_pct
 
         results.append({
@@ -52,7 +51,7 @@ def compute_rebalance(client_id: str):
             "post_rebalance_pct": round(post_rebalance_pct, 2),
         })
 
-    # ---- Process NON-PLAN funds (REVIEW) ----
+
     for h in holdings:
         if h["fund_id"] not in model_map:
             hv = h["current_value"]
@@ -71,7 +70,7 @@ def compute_rebalance(client_id: str):
                 "post_rebalance_pct": None,
             })
 
-    # ---- Summary figures ----
+
     total_to_buy  = sum(r["amount"] for r in results if r["action"] == "BUY")
     total_to_sell = sum(r["amount"] for r in results if r["action"] == "SELL")
     net_cash_needed = round(total_to_buy - total_to_sell, 2)

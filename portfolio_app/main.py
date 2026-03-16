@@ -18,7 +18,6 @@ from rebalance import compute_rebalance
 
 app = FastAPI(title="Portfolio Rebalancer")
 
-# Serve static files
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -28,9 +27,7 @@ def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
-# ─────────────────────────────────────────────
-# READ endpoints
-# ─────────────────────────────────────────────
+
 
 @app.get("/clients")
 def clients():
@@ -59,9 +56,6 @@ def plan():
     return get_model_funds()
 
 
-# ─────────────────────────────────────────────
-# WRITE endpoints
-# ─────────────────────────────────────────────
 
 class SaveRebalanceRequest(BaseModel):
     client_id: str = "C001"
