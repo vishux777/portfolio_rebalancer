@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio Rebalancer — Wealth Builder 2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+/* ── DESIGN TOKENS ─────────────────────────────── */
+:root {
+  --bg:        #0b0e13;
+  --surface:   #12161e;
+  --card:      #181d28;
+  --border:    #252c3b;
+  --border2:   #1e2535;
+  --accent:    #5b8af0;
+  --accent2:   #38d9a9;
+  --sell:      #f06b6b;
+  --buy:       #38d9a9;
+  --review:    #f4c85e;
+  --hold:      #8892a4;
+  --text:      #e8edf5;
+  --muted:     #5a6578;
+  --muted2:    #8892a4;
+  --mono:      'DM Mono', monospace;
+  --sans:      'Inter', sans-serif;
+  --display:   'Syne', sans-serif;
+  --radius:    10px;
+  --shadow:    0 4px 24px rgba(0,0,0,.45);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── GRID NOISE BACKGROUND ────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(91,138,240,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,138,240,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ── LAYOUT ───────────────────────────────────── */
+.shell {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ──────────────────────────────────── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .wordmark {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--text);
+  letter-spacing: -.3px;
+}
+.sidebar-logo .tagline {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-family: var(--mono);
+}
+
+.client-selector {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.client-selector label {
+  display: block;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.client-selector select {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+.client-selector select:focus { border-color: var(--accent); }
+
+nav { padding: 16px 12px; flex: 1; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .15s;
+  margin-bottom: 2px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-item:hover { background: var(--card); color: var(--text); }
+.nav-item.active { background: rgba(91,138,240,.15); color: var(--accent); }
+
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ── MAIN CONTENT ─────────────────────────────── */
+main {
+  padding: 0;
+  overflow-y: auto;
+  min-height: 100vh;
+}
+
+.page { display: none; padding: 36px 40px 60px; }
+.page.active { display: block; }
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 20px;
+}
+.page-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -.4px;
+  color: var(--text);
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--muted2);
+  margin-top: 4px;
+  font-weight: 400;
+}
+.page-header .actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+
+/* ── BUTTONS ──────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  font-family: var(--sans);
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #4a7be0; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(91,138,240,.4); }
+.btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-success { background: var(--buy); color: #0b3d2e; }
+.btn-success:hover { background: #2fcb9c; transform: translateY(-1px); }
+.btn-danger { background: rgba(240,107,107,.15); color: var(--sell); border: 1px solid rgba(240,107,107,.3); }
+.btn-danger:hover { background: rgba(240,107,107,.25); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+
+/* ── STAT CARDS ───────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.stat-card.buy::before    { background: var(--buy); }
+.stat-card.sell::before   { background: var(--sell); }
+.stat-card.cash::before   { background: var(--review); }
+.stat-card.total::before  { background: var(--accent); }
+
+.stat-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -.5px;
+}
+.stat-value.buy    { color: var(--buy); }
+.stat-value.sell   { color: var(--sell); }
+.stat-value.cash   { color: var(--review); }
+.stat-value.total  { color: var(--accent); }
+.stat-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* ── TABLES ───────────────────────────────────── */
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.table-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.table-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+  font-size: 13px;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.018); }
+
+.num { font-family: var(--mono); font-size: 13px; }
+
+/* ── BADGES ───────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: .04em;
+}
+.badge-buy     { background: rgba(56,217,169,.15); color: var(--buy); border: 1px solid rgba(56,217,169,.25); }
+.badge-sell    { background: rgba(240,107,107,.15); color: var(--sell); border: 1px solid rgba(240,107,107,.25); }
+.badge-review  { background: rgba(244,200,94,.12); color: var(--review); border: 1px solid rgba(244,200,94,.25); }
+.badge-hold    { background: rgba(136,146,164,.1); color: var(--hold); border: 1px solid rgba(136,146,164,.2); }
+.badge-pending   { background: rgba(91,138,240,.12); color: var(--accent); border: 1px solid rgba(91,138,240,.25); }
+.badge-applied   { background: rgba(56,217,169,.12); color: var(--buy); border: 1px solid rgba(56,217,169,.2); }
+.badge-dismissed { background: rgba(136,146,164,.1); color: var(--hold); border: 1px solid rgba(136,146,164,.2); }
+
+/* ── DRIFT PILL ───────────────────────────────── */
+.drift-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+.drift-pos { background: rgba(56,217,169,.12); color: var(--buy); }
+.drift-neg { background: rgba(240,107,107,.12); color: var(--sell); }
+.drift-zero { background: rgba(136,146,164,.1); color: var(--hold); }
+
+/* ── PROGRESS BAR ─────────────────────────────── */
+.bar-wrap { display: flex; align-items: center; gap: 8px; }
+.bar-track {
+  flex: 1;
+  height: 5px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.bar-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
+.bar-fill.equity { background: var(--accent); }
+.bar-fill.debt   { background: var(--review); }
+.bar-fill.gold   { background: #e8a048; }
+.bar-fill.other  { background: var(--muted); }
+
+/* ── ALERT BOX ────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+.alert-warn { background: rgba(244,200,94,.08); border: 1px solid rgba(244,200,94,.25); color: var(--review); }
+.alert-info { background: rgba(91,138,240,.08); border: 1px solid rgba(91,138,240,.2); color: var(--accent); }
+
+/* ── EDIT PLAN FORM ───────────────────────────── */
+.plan-form { display: grid; gap: 14px; }
+.plan-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 20px;
+  transition: border-color .15s;
+}
+.plan-row:focus-within { border-color: var(--accent); }
+.plan-row .fund-info .name { font-weight: 500; font-size: 13px; }
+.plan-row .fund-info .cls {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+.plan-row .pct-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-row input[type=number] {
+  width: 80px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: right;
+  outline: none;
+  transition: border-color .15s;
+}
+.plan-row input[type=number]:focus { border-color: var(--accent); }
+.plan-row .pct-sign { color: var(--muted); font-family: var(--mono); }
+
+.sum-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.sum-row .sum-label { font-size: 13px; color: var(--muted2); }
+.sum-value { font-family: var(--mono); font-weight: 600; font-size: 18px; }
+.sum-value.ok      { color: var(--buy); }
+.sum-value.err     { color: var(--sell); }
+
+/* ── HISTORY SESSION CARD ─────────────────────── */
+.session-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background .12s;
+  gap: 16px;
+}
+.session-header:hover { background: rgba(255,255,255,.02); }
+.session-meta { display: flex; align-items: center; gap: 16px; flex: 1; flex-wrap: wrap; }
+.session-date { font-size: 13px; font-family: var(--mono); color: var(--muted2); }
+.session-val  { font-weight: 600; font-family: var(--mono); color: var(--text); }
+.session-chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
+.session-header.open .session-chevron { transform: rotate(180deg); }
+.session-body { border-top: 1px solid var(--border); display: none; }
+.session-body.open { display: block; }
+.session-actions-row {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+/* ── LOADING SPINNER ──────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; }
+
+/* ── TOAST ────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+  animation: slideIn .2s ease;
+  min-width: 240px;
+}
+.toast.success { border-left-color: var(--buy); }
+.toast.error   { border-left-color: var(--sell); }
+@keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: none; } }
+
+/* ── FUND NAME CELL ───────────────────────────── */
+.fund-name-cell .fname { font-weight: 500; font-size: 13px; }
+.fund-name-cell .fid   { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+
+/* ── AMOUNT CELL ──────────────────────────────── */
+.amount-cell { font-family: var(--mono); font-weight: 500; }
+.amount-cell.buy  { color: var(--buy); }
+.amount-cell.sell { color: var(--sell); }
+
+/* ── DIVIDER ──────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+/* ── RESPONSIVE tweak ─────────────────────────── */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .page { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ── SIDEBAR ──────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="wordmark">⚖ Rebalancer</div>
+    <div class="tagline">Wealth Builder 2025</div>
+  </div>
+
+  <div class="client-selector">
+    <label>Active Client</label>
+    <select id="clientSelect"></select>
+  </div>
+
+  <nav>
+    <button class="nav-item active" data-page="portfolio" onclick="showPage('portfolio')">
+      <span class="icon">📊</span> Portfolio Analysis
+    </button>
+    <button class="nav-item" data-page="holdings" onclick="showPage('holdings')">
+      <span class="icon">💼</span> Current Holdings
+    </button>
+    <button class="nav-item" data-page="history" onclick="showPage('history')">
+      <span class="icon">🕐</span> Rebalance History
+    </button>
+    <button class="nav-item" data-page="plan" onclick="showPage('plan')">
+      <span class="icon">✏️</span> Edit Plan
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">SQLite · FastAPI · Vanilla JS</div>
+</aside>
+
+<!-- ── MAIN ──────────────────────────────────────── -->
+<main>
+
+  <!-- PAGE 1: Portfolio Analysis -->
+  <section class="page active" id="page-portfolio">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Portfolio Analysis</div>
+        <div class="page-sub" id="portfolioSubtitle">Loading client data…</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="loadPortfolio()">↻ Refresh</button>
+        <button class="btn btn-success" id="saveBtn" onclick="saveRebalance()">
+          💾 Save Rebalancing
+        </button>
+      </div>
+    </div>
+
+    <!-- stat cards -->
+    <div class="stat-grid">
+      <div class="stat-card total">
+        <div class="stat-label">Total Portfolio Value</div>
+        <div class="stat-value total" id="s-total">—</div>
+        <div class="stat-hint">All holdings incl. off-plan</div>
+      </div>
+      <div class="stat-card buy">
+        <div class="stat-label">Total to BUY</div>
+        <div class="stat-value buy" id="s-buy">—</div>
+        <div class="stat-hint">Funds below target</div>
+      </div>
+      <div class="stat-card sell">
+        <div class="stat-label">Total to SELL</div>
+        <div class="stat-value sell" id="s-sell">—</div>
+        <div class="stat-hint">Funds above target</div>
+      </div>
+      <div class="stat-card cash">
+        <div class="stat-label">Fresh Money Needed</div>
+        <div class="stat-value cash" id="s-cash">—</div>
+        <div class="stat-hint">Buy − Sell</div>
+      </div>
+    </div>
+
+    <div id="review-alert" class="alert alert-warn" style="display:none">
+      ⚠️ <span id="review-alert-text"></span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head">
+        <span class="table-title">Fund-by-Fund Rebalancing Breakdown</span>
+        <span id="portfolio-ts" style="font-size:11px;color:var(--muted);font-family:var(--mono)"></span>
+      </div>
+      <div id="portfolio-loading" class="loading-state">
+        <div class="spinner"></div> Computing rebalance…
+      </div>
+      <table id="portfolio-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Fund</th>
+            <th>Asset Class</th>
+            <th>Plan %</th>
+            <th>Today %</th>
+            <th>Drift</th>
+            <th>Action</th>
+            <th style="text-align:right">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody id="portfolio-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE 2: Current Holdings -->
+  <section class="page" id="page-holdings">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Current Holdings</div>
+        <div class="page-sub">All funds currently held by client</div>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns: repeat(auto-fill,minmax(200px,1fr))">
+      <div class="stat-card total">
+        <div class="stat-label">Portfolio Value</div>
+        <div class="stat-value total" id="h-total">—</div>
+        <div class="stat-hint" id="h-count"></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head"><span class="table-title">Holdings Breakdown</span></div>
+      <div id="holdings-loading" class="loading-state"><div class="spinner"></div> Fetching holdings…</div>
+      <table id="holdings-table" style="display:none">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fund ID</th>
+            <th>Fund Name</th>
+            <th style="text-align:right">Current Value (₹)</th>
+            <th style="text-align:right">Portfolio Weight</th>
+            <th>In Plan?</th>
+          </tr>
+        </thead>
+        <tbody id="holdings-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE 3: Rebalance History -->
+  <section class="page" id="page-history">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Rebalance History</div>
+        <div class="page-sub">All saved recommendation sessions</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="loadHistory()">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="history-loading" class="loading-state"><div class="spinner"></div> Loading history…</div>
+    <div id="history-content"></div>
+  </section>
+
+  <!-- PAGE 4: Edit Plan -->
+  <section class="page" id="page-plan">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Edit Recommended Plan</div>
+        <div class="page-sub">Adjust target allocation percentages. Must total exactly 100%.</div>
+      </div>
+    </div>
+    <div id="plan-loading" class="loading-state"><div class="spinner"></div> Loading plan…</div>
+    <div id="plan-form-wrap" style="display:none">
+      <div class="plan-form" id="plan-form"></div>
+      <div style="margin-top:14px">
+        <div class="sum-row">
+          <span class="sum-label">Total Allocation</span>
+          <span class="sum-value" id="plan-sum">0%</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="savePlan()">💾 Save &amp; Recalculate</button>
+        <button class="btn btn-ghost" onclick="loadPlan()">↺ Reset</button>
+      </div>
+      <div id="plan-msg" style="margin-top:12px;font-size:13px;display:none"></div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ── JAVASCRIPT ─────────────────────────────────── -->
+<script>
+/* ── STATE ──────────────────────────────────── */
+let currentClient = 'C001';
+let planFunds = [];
+let lastPortfolioData = null;
+
+/* ── HELPERS ────────────────────────────────── */
+const fmt = n => n == null ? '—' : '₹' + Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits:0});
+const fmtPct = n => n == null ? '—' : n.toFixed(1) + '%';
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`).classList.add('active');
+  // Lazy load
+  if (name === 'portfolio') loadPortfolio();
+  if (name === 'holdings')  loadHoldings();
+  if (name === 'history')   loadHistory();
+  if (name === 'plan')      loadPlan();
+}
+
+function actionBadge(action) {
+  const map = {
+    BUY:    '<span class="badge badge-buy">▲ BUY</span>',
+    SELL:   '<span class="badge badge-sell">▼ SELL</span>',
+    REVIEW: '<span class="badge badge-review">⚑ REVIEW</span>',
+    HOLD:   '<span class="badge badge-hold">— HOLD</span>',
+  };
+  return map[action] || action;
+}
+
+function driftPill(drift) {
+  if (drift == null) return '<span class="drift-pill drift-zero">—</span>';
+  const sign = drift > 0 ? '+' : '';
+  const cls  = drift > 0 ? 'drift-pos' : drift < 0 ? 'drift-neg' : 'drift-zero';
+  return `<span class="drift-pill ${cls}">${sign}${drift.toFixed(1)}%</span>`;
+}
+
+/* ── CLIENTS ────────────────────────────────── */
+async function loadClients() {
+  const res = await fetch('/clients');
+  const data = await res.json();
+  const sel = document.getElementById('clientSelect');
+  sel.innerHTML = '';
+  data.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.client_id;
+    opt.textContent = c.client_name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    currentClient = sel.value;
+    loadPortfolio();
+    // Also refresh whichever page is currently active
+  });
+  currentClient = sel.value;
+  loadPortfolio();
+}
+
+/* ── PORTFOLIO ANALYSIS ─────────────────────── */
+async function loadPortfolio() {
+  const tbl  = document.getElementById('portfolio-table');
+  const load = document.getElementById('portfolio-loading');
+  const tbody = document.getElementById('portfolio-tbody');
+  tbl.style.display = 'none';
+  load.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/portfolio?client_id=${currentClient}`);
+    const d   = await res.json();
+    lastPortfolioData = d;
+
+    // stat cards
+    document.getElementById('s-total').textContent = fmt(d.total_value);
+    document.getElementById('s-buy').textContent   = fmt(d.total_to_buy);
+    document.getElementById('s-sell').textContent  = fmt(d.total_to_sell);
+    document.getElementById('s-cash').textContent  = fmt(d.net_cash_needed);
+
+    // subtitle
+    const clientName = document.getElementById('clientSelect').selectedOptions[0]?.textContent || '';
+    document.getElementById('portfolioSubtitle').textContent =
+      `${clientName} · Wealth Builder 2025 · ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}`;
+    document.getElementById('portfolio-ts').textContent = `as of ${new Date().toLocaleTimeString()}`;
+
+    // review alert
+    const reviewFunds = d.funds.filter(f => f.action === 'REVIEW');
+    const alertEl = document.getElementById('review-alert');
+    if (reviewFunds.length) {
+      alertEl.style.display = 'flex';
+      document.getElementById('review-alert-text').textContent =
+        `${reviewFunds.map(f => f.fund_name).join(', ')} — not part of the recommended plan. Review with your advisor before acting.`;
+    } else {
+      alertEl.style.display = 'none';
+    }
+
+    // build table rows
+    tbody.innerHTML = '';
+    d.funds.forEach(f => {
+      const tr = document.createElement('tr');
+      const amtClass = f.action === 'BUY' ? 'buy' : f.action === 'SELL' ? 'sell' : '';
+      tr.innerHTML = `
+        <td class="fund-name-cell">
+          <div class="fname">${f.fund_name}</div>
+          <div class="fid">${f.fund_id}</div>
+        </td>
+        <td>${f.asset_class}</td>
+        <td class="num">${fmtPct(f.target_pct)}</td>
+        <td class="num">${fmtPct(f.current_pct)}</td>
+        <td>${driftPill(f.drift)}</td>
+        <td>${actionBadge(f.action)}</td>
+        <td style="text-align:right"><span class="amount-cell ${amtClass} num">${fmt(f.amount)}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbl.style.display = 'table';
+    load.style.display = 'none';
+  } catch(e) {
+    load.innerHTML = `<span style="color:var(--sell)">Error loading data: ${e.message}</span>`;
+  }
+}
+
+/* ── HOLDINGS ───────────────────────────────── */
+async function loadHoldings() {
+  const tbl  = document.getElementById('holdings-table');
+  const load = document.getElementById('holdings-loading');
+  const tbody = document.getElementById('holdings-tbody');
+  tbl.style.display = 'none';
+  load.style.display = 'flex';
+
+  // Fetch both holdings and plan fund ids
+  const [hRes, pRes] = await Promise.all([
+    fetch(`/holdings?client_id=${currentClient}`),
+    fetch('/plan')
+  ]);
+  const hData  = await hRes.json();
+  const pFunds = await pRes.json();
+  const planIds = new Set(pFunds.map(f => f.fund_id));
+
+  document.getElementById('h-total').textContent = fmt(hData.total_value);
+  document.getElementById('h-count').textContent = `${hData.holdings.length} fund${hData.holdings.length !== 1 ? 's' : ''}`;
+
+  tbody.innerHTML = '';
+  hData.holdings.forEach((h, i) => {
+    const pct = hData.total_value > 0 ? (h.current_value / hData.total_value * 100) : 0;
+    const inPlan = planIds.has(h.fund_id);
+    const cls = h.current_value > 0 ? 'equity' : 'other';
+    tbody.innerHTML += `
+      <tr>
+        <td class="num" style="color:var(--muted)">${i+1}</td>
+        <td><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">${h.fund_id}</span></td>
+        <td class="fund-name-cell"><div class="fname">${h.fund_name}</div></td>
+        <td style="text-align:right" class="num">${fmt(h.current_value)}</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+            <span class="num" style="font-size:12px;color:var(--muted2);min-width:38px">${pct.toFixed(1)}%</span>
+          </div>
+        </td>
+        <td>${inPlan
+          ? '<span style="color:var(--buy);font-size:12px">✓ Yes</span>'
+          : '<span class="badge badge-review" style="font-size:10px">Off-plan</span>'}</td>
+      </tr>`;
+  });
+
+  tbl.style.display = 'table';
+  load.style.display = 'none';
+}
+
+/* ── HISTORY ────────────────────────────────── */
+async function loadHistory() {
+  const load = document.getElementById('history-loading');
+  const cont = document.getElementById('history-content');
+  load.style.display = 'flex';
+  cont.innerHTML = '';
+
+  const res  = await fetch(`/history?client_id=${currentClient}`);
+  const data = await res.json();
+
+  load.style.display = 'none';
+
+  if (!data.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No rebalancing sessions saved yet.<br>Run an analysis and click "Save Rebalancing".</p></div>`;
+    return;
+  }
+
+  data.forEach(s => {
+    const statusBadge = `<span class="badge badge-${s.status.toLowerCase()}">${s.status}</span>`;
+    const card = document.createElement('div');
+    card.className = 'session-card';
+    card.innerHTML = `
+      <div class="session-header" onclick="toggleSession(this)">
+        <div class="session-meta">
+          <span class="session-date">🕐 ${s.created_at}</span>
+          <span class="session-val">${fmt(s.portfolio_value)}</span>
+          ${statusBadge}
+        </div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">BUY ${fmt(s.total_to_buy)} / SELL ${fmt(s.total_to_sell)}</div>
+            <div style="font-size:12px;color:var(--review);font-family:var(--mono)">Fresh: ${fmt(s.net_cash_needed)}</div>
+          </div>
+          <span class="session-chevron">▼</span>
+        </div>
+      </div>
+      <div class="session-body">
+        <table>
+          <thead><tr>
+            <th>Fund</th><th>Action</th>
+            <th style="text-align:right">Amount</th>
+            <th>Today %</th><th>Target %</th><th>Post %</th>
+          </tr></thead>
+          <tbody>
+            ${s.items.map(it => `
+              <tr>
+                <td class="fund-name-cell"><div class="fname">${it.fund_name}</div><div class="fid">${it.fund_id}</div></td>
+                <td>${actionBadge(it.action)}</td>
+                <td style="text-align:right" class="num">${fmt(it.amount)}</td>
+                <td class="num">${fmtPct(it.current_pct)}</td>
+                <td class="num">${fmtPct(it.target_pct)}</td>
+                <td class="num">${fmtPct(it.post_rebalance_pct)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="session-actions-row">
+          <button class="btn btn-success btn-sm" onclick="updateStatus(${s.session_id},'APPLIED',this)">✓ Mark Applied</button>
+          <button class="btn btn-danger btn-sm" onclick="updateStatus(${s.session_id},'DISMISSED',this)">✗ Dismiss</button>
+        </div>
+      </div>
+    `;
+    cont.appendChild(card);
+  });
+}
+
+function toggleSession(header) {
+  const body = header.nextElementSibling;
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+async function updateStatus(sid, status, btn) {
+  btn.disabled = true;
+  const res = await fetch('/update_status', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({session_id: sid, status})
+  });
+  const d = await res.json();
+  if (d.success) { toast(`Marked as ${status}`, 'success'); loadHistory(); }
+}
+
+/* ── SAVE REBALANCE ─────────────────────────── */
+async function saveRebalance() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Saving…';
+  try {
+    const res = await fetch('/save_rebalance', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({client_id: currentClient})
+    });
+    const d = await res.json();
+    if (d.success) {
+      toast(`Session #${d.session_id} saved successfully!`, 'success');
+    } else {
+      toast('Save failed', 'error');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '💾 Save Rebalancing';
+}
+
+/* ── EDIT PLAN ──────────────────────────────── */
+async function loadPlan() {
+  const load = document.getElementById('plan-loading');
+  const wrap = document.getElementById('plan-form-wrap');
+  load.style.display = 'flex';
+  wrap.style.display = 'none';
+
+  const res  = await fetch('/plan');
+  planFunds  = await res.json();
+
+  const form = document.getElementById('plan-form');
+  form.innerHTML = '';
+  planFunds.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'plan-row';
+    row.innerHTML = `
+      <div class="fund-info">
+        <div class="name">${f.fund_name}</div>
+        <div class="cls">${f.fund_id} · ${f.asset_class}</div>
+      </div>
+      <div class="pct-input">
+        <input type="number" min="0" max="100" step="0.1"
+               id="pct-${f.fund_id}" value="${f.allocation_pct}"
+               oninput="updateSum()" />
+        <span class="pct-sign">%</span>
+      </div>
+    `;
+    form.appendChild(row);
+  });
+  updateSum();
+  load.style.display = 'none';
+  wrap.style.display = 'block';
+}
+
+function updateSum() {
+  const total = planFunds.reduce((acc, f) => {
+    const v = parseFloat(document.getElementById(`pct-${f.fund_id}`)?.value) || 0;
+    return acc + v;
+  }, 0);
+  const el = document.getElementById('plan-sum');
+  el.textContent = total.toFixed(1) + '%';
+  el.className = `sum-value ${Math.abs(total - 100) < 0.01 ? 'ok' : 'err'}`;
+}
+
+async function savePlan() {
+  const allocations = planFunds.map(f => ({
+    fund_id: f.fund_id,
+    allocation_pct: parseFloat(document.getElementById(`pct-${f.fund_id}`).value) || 0
+  }));
+  const total = allocations.reduce((a, x) => a + x.allocation_pct, 0);
+  if (Math.abs(total - 100) > 0.01) {
+    toast(`Allocations sum to ${total.toFixed(1)}% — must be exactly 100%`, 'error');
+    return;
+  }
+  const res = await fetch('/update_plan', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({allocations})
+  });
+  const d = await res.json();
+  if (res.ok) {
+    toast('Plan updated! Recalculating…', 'success');
+    loadPortfolio();
+  } else {
+    toast('Error: ' + (d.detail || 'Unknown'), 'error');
+  }
+}
+
+/* ── INIT ───────────────────────────────────── */
+loadClients();
+</script>
+</body>
+</html>
